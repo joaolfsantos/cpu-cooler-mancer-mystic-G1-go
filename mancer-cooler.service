@@ -1,0 +1,16 @@
+[Unit]
+Description=Serviço de Monitoramento para o Display do Mancer Mystic G1 Cooler
+After=multi-user.target
+
+[Service]
+Type=simple
+# IMPORTANTE: Execute como seu usuário normal, não como root!
+# Substitua 'seu_usuario_normal' pelo seu nome de usuário.
+User=joao
+#Mover binario para /usr/local/bin/
+ExecStart=/usr/local/bin/mancer-cooler-monitor
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
