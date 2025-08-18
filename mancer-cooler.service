@@ -4,10 +4,9 @@ After=multi-user.target
 
 [Service]
 Type=simple
-# IMPORTANTE: Execute como seu usuário normal, não como root!
-# Substitua 'seu_usuario_normal' pelo seu nome de usuário.
-User=joao
-#Mover binario para /usr/local/bin/
+# Esta linha foi removida para que o serviço seja executado como root
+# User=joao
+# Mover binário para /usr/local/bin/
 ExecStart=/usr/local/bin/mancer-cooler-monitor
 Restart=always
 RestartSec=3
