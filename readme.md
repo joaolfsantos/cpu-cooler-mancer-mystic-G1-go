@@ -108,7 +108,7 @@ Agora, compile o programa e mova o binário para um diretório do sistema.
     ```
 2.  Mova o binário para `/usr/local/bin`:
     ```bash
-    sudo mv mancer-cooler-monitor /usr/local/bin/
+    sudo mv mancer-cooler-monitor /usr/local/bin/ && sudo restorecon -v /usr/local/bin/mancer-cooler-monitor
     ```
 
 ### Passo 6: Instalar e Configurar o Serviço `systemd`
