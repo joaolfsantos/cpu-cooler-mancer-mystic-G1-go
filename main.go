@@ -20,7 +20,12 @@ const (
 func getCPUTemp() (int, error) {
 	temps, err := host.SensorsTemperatures()
 	if err != nil {
-		return 0, fmt.Errorf("erro ao ler sensores: %w", err)
+		// gopsutil retorna avisos (Warnings) quando alguns sensores falham,
+		// mas ainda assim devolve os sensores lidos com sucesso. Só abortamos
+		// se realmente nenhum sensor pôde ser lido.
+		if len(temps) == 0 {
+			return 0, fmt.Errorf("erro ao ler sensores: %w", err)
+		}
 	}
 
 	for _, temp := range temps {
