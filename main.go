@@ -1,12 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
-
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/sstallion/go-hid"
 )
 
 const (
@@ -14,41 +10,28 @@ const (
 	ProductID = 0x8666
 )
 
-// getCPUTemp busca a temperatura da CPU.
-// Adapte o `sensorKey` se necessário para o seu sistema.
-// Sensores comuns são "k10temp" para AMD ou "coretemp" para Intel.
-func getCPUTemp() (int, error) {
-	temps, err := host.SensorsTemperatures()
-	if err != nil {
-		// gopsutil retorna avisos (Warnings) quando alguns sensores falham,
-		// mas ainda assim devolve os sensores lidos com sucesso. Só abortamos
-		// se realmente nenhum sensor pôde ser lido.
-		if len(temps) == 0 {
-			return 0, fmt.Errorf("erro ao ler sensores: %w", err)
-		}
-	}
-
-	for _, temp := range temps {
-		// Usando o sensor de CPU correto para este sistema (AMD Ryzen).
-		if temp.SensorKey == "k10temp_tctl" {
-			return int(temp.Temperature), nil
-		}
-	}
-	return 0, fmt.Errorf("nenhum sensor de CPU conhecido (k10temp/coretemp) foi encontrado")
+// Device abstrai a comunicação com o display do cooler. A implementação muda
+// por SO (go-hid no Linux, syscalls nativas no Windows), mas a interface e o
+// loop principal abaixo são idênticos em qualquer plataforma.
+type Device interface {
+	WriteTemp(temp byte) error
+	Close() error
 }
+
+// openDevice e getCPUTemp são implementadas nos arquivos específicos de cada
+// SO (hid_*.go e temp_*.go), selecionados via build tags.
 
 func main() {
 	log.Println("Iniciando serviço de monitoramento do Mancer Mystic G1...")
 
-	device, err := hid.Open(VendorID, ProductID, "")
+	dev, err := openDevice(VendorID, ProductID)
 	if err != nil {
-		log.Fatalf("Erro ao abrir o dispositivo HID: %v. Certifique-se de que as regras udev estão aplicadas.", err)
+		log.Fatalf("Erro ao abrir o dispositivo HID: %v", err)
 	}
-	defer device.Close()
+	defer dev.Close()
 
 	log.Println("Dispositivo conectado com sucesso.")
 
-	// Loop infinito de monitoramento
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -67,11 +50,9 @@ func main() {
 			temp = 255
 		}
 
-		report := []byte{0x00, byte(temp)}
-		_, err = device.Write(report)
-		if err != nil {
-			// Se o dispositivo for desconectado, o programa irá falhar aqui.
-			// O systemd o reiniciará automaticamente.
+		if err := dev.WriteTemp(byte(temp)); err != nil {
+			// Se o dispositivo for desconectado, falhamos aqui. O serviço
+			// (systemd no Linux / Agendador de Tarefas no Windows) reinicia.
 			log.Fatalf("Erro fatal ao escrever no dispositivo (pode ter sido desconectado): %v", err)
 		}
 	}
