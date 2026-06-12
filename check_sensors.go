@@ -13,7 +13,8 @@ import (
 // disponíveis no sistema para identificar o sensor correto da CPU.
 //
 // Uso:
-//   go run check_sensors.go
+//
+//	go run check_sensors.go
 func main() {
 	temps, err := host.SensorsTemperatures()
 	if err != nil {
